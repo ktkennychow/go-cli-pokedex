@@ -7,25 +7,24 @@ import (
 	"github.com/ktkennychow/go-cli-pokedex/internal/pokeapi"
 )
 
-func commandMapNext(c *Config) error{
-	newRes, err := pokeapi.GetPokedexApi(c.Next)
+func commandMapNext(cfg *Config) error{
+	newRes, err := pokeapi.GetPokedexApi(cfg.Next, cfg.Cache)
 	if err != nil {
 		return err
 	}
-	
 	for _, locationArea := range newRes.LocationAreas{
 		fmt.Println(locationArea.Name)
 	}
-	c.Next, c.Previous = newRes.Next, newRes.Previous
+	cfg.Next, cfg.Previous = newRes.Next, newRes.Previous
 	return nil
 }
 
-func commandMapPrevious(c *Config) error{
-	if (c.Previous == "") {
+func commandMapPrevious(cfg *Config) error{
+	if (cfg.Previous == "") {
 		return errors.New("already on the first page")
 	}
 
-	newRes, err := pokeapi.GetPokedexApi(c.Previous)
+	newRes, err := pokeapi.GetPokedexApi(cfg.Previous, cfg.Cache)
 	if err != nil {
 		return err
 	}
@@ -33,6 +32,6 @@ func commandMapPrevious(c *Config) error{
 	for _, locationArea := range newRes.LocationAreas{
 		fmt.Println(locationArea.Name)
 	}
-	c.Next, c.Previous = newRes.Next, newRes.Previous
+	cfg.Next, cfg.Previous = newRes.Next, newRes.Previous
 	return nil
 }
