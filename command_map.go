@@ -3,35 +3,38 @@ package main
 import (
 	"errors"
 	"fmt"
-
-	"github.com/ktkennychow/go-cli-pokedex/internal/pokeapi"
 )
 
-func commandMapNext(cfg *Config) error{
-	newRes, err := pokeapi.GetPokedexApi(cfg.Next, cfg.Cache)
+func commandMapNext(cfg *config) error{
+	locationAreasResp, err := cfg.pokeapiClient.ListLocationAreas(cfg.nextLocationURL)
 	if err != nil {
 		return err
 	}
-	for _, locationArea := range newRes.LocationAreas{
+
+	cfg.nextLocationURL = locationAreasResp.Next
+	cfg.prevLocationURL = locationAreasResp.Previous
+
+	for _, locationArea := range locationAreasResp.Results{
 		fmt.Println(locationArea.Name)
 	}
-	cfg.Next, cfg.Previous = newRes.Next, newRes.Previous
 	return nil
 }
 
-func commandMapPrevious(cfg *Config) error{
-	if (cfg.Previous == "") {
-		return errors.New("already on the first page")
+func commandMapPrevious(cfg *config) error{
+	if cfg.prevLocationURL == nil {
+		return errors.New("you're on the first page")
 	}
-
-	newRes, err := pokeapi.GetPokedexApi(cfg.Previous, cfg.Cache)
+	
+	locationAreasResp, err := cfg.pokeapiClient.ListLocationAreas(cfg.prevLocationURL)
 	if err != nil {
 		return err
 	}
-	
-	for _, locationArea := range newRes.LocationAreas{
+
+	cfg.nextLocationURL = locationAreasResp.Next
+	cfg.prevLocationURL = locationAreasResp.Previous
+
+	for _, locationArea := range locationAreasResp.Results{
 		fmt.Println(locationArea.Name)
 	}
-	cfg.Next, cfg.Previous = newRes.Next, newRes.Previous
 	return nil
 }

@@ -5,61 +5,52 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
-	"github.com/ktkennychow/go-cli-pokedex/internal/pokecache"
+	"github.com/ktkennychow/go-cli-pokedex/internal/pokeapi"
 )
 
-type Config struct {
-	Cache *pokecache.Cache
-	Next string
-	Previous string
+type config struct {
+	pokeapiClient pokeapi.Client
+	nextLocationURL *string
+	prevLocationURL *string
 }
 
-func startRepl(){
+func startRepl(cfg *config){
 	reader := bufio.NewScanner(os.Stdin)
-	cache := pokecache.NewCache(5 * time.Minute)
-	cfg := Config{Next: "https://pokeapi.co/api/v2/location-area?offset=0&limit=20", Previous: "", Cache: cache}
 	for {
 		fmt.Printf("Pokedex > ")
 		reader.Scan()
+
 		userInput := reader.Text()
 		words := formatInput(userInput)
-		commands, commandsWithConfigAndCache := getCommands()
-		command, exist := commands[words[0]]
-		if !exist {
-			command, exist := commandsWithConfigAndCache[words[0]]
-			if !exist {
-				fmt.Printf("%v is not a valid command.\n", words[0])
-				continue
-			}
-			err := command.callback(&cfg)
+		if len(words) == 0 {
+			continue
+		}
+
+		commandName := words[0]
+
+		commands:= getCommands()
+		command, exist := commands[commandName]
+		if exist {
+			err := command.callback(cfg)
 			if err != nil {
 				fmt.Println(err)
 			}
 		} else {
-			err := command.callback()
-			if err != nil {
-				fmt.Println(err)
-			}
+			fmt.Printf("%v is not a valid command.\n", words[0])
+			continue
 		}
 	}
-}
-
-type commandsWithConfig struct {
-	name        string
-	description string
-	callback    func(cfg *Config) error
 }
 
 type commands struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(cfg *config) error
 }
 
-func getCommands() (map[string]commands, map[string]commandsWithConfig) {
-	commands := map[string]commands{
+func getCommands() (map[string]commands) {
+	return map[string]commands{
 			"help": {
 				name:        "help",
 				description: "Displays a help message",
@@ -70,24 +61,22 @@ func getCommands() (map[string]commands, map[string]commandsWithConfig) {
 				description: "Exit the Pokedex",
 				callback:    commandExit,
 			},
-		}
-	commandsWithConfig := map[string]commandsWithConfig{
-			"mapsf": {
-				name:        "mapsf",
+			"mapf": {
+				name:        "mapf",
 				description: "Show the next 20 location areas",
 				callback:    commandMapNext,
 			},
-			"mapsb": {
-				name:        "mapsb",
+			"mapb": {
+				name:        "mapb",
 				description: "Show the previous 20 location areas",
 				callback:    commandMapPrevious,
 			},
 		}
-	return commands, commandsWithConfig
 }
 
 func formatInput(s string) []string{
 	s = strings.TrimSpace(s)
+	s = strings.ToLower(s)
 	words := strings.Fields(s)
 	return words
 }
